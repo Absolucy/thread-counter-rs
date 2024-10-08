@@ -1,0 +1,14 @@
+[package]
+name = "thread-counter"
+description = "A simple way of efficiently keeping track of active threads and waiting for them to exit."
+version = "0.1.0"
+authors = ["Lucy <lucy@absolucy.moe>"]
+license = "MIT OR Apache-2.0"
+edition = "2021"
+documentation = "https://docs.rs/thread-counter"
+repository = "https://github.com/Absolucy/thread-counter-rs"
+categories = ["concurrency"]
+keywords = ["thread", "concurrency", "condvar", "counter"]
+
+[dependencies]
+parking_lot = "0.12"
