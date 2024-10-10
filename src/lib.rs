@@ -50,11 +50,7 @@
 #![allow(clippy::tabs_in_doc_comments)]
 
 use parking_lot::{Condvar, Mutex};
-use std::{
-	ops::Deref,
-	sync::Arc,
-	time::{Duration, Instant},
-};
+use std::{ops::Deref, sync::Arc, time::Duration};
 
 /// A thread-safe counter for tracking the number of active threads or
 /// operations.
@@ -143,35 +139,17 @@ impl RawThreadCounter {
 	/// * `true` if the count reached zero.
 	/// * `false` if the timeout was reached before the count reached zero.
 	pub fn wait(&self, timeout: impl Into<Option<Duration>>) -> bool {
+		let mut count = self.count.lock();
+		let condition = |count: &mut usize| *count > 0;
 		match timeout.into() {
-			Some(timeout) => self.wait_timeout(timeout),
+			Some(timeout) => !self
+				.condvar
+				.wait_while_for(&mut count, condition, timeout)
+				.timed_out(),
 			None => {
-				self.wait_forever();
+				self.condvar.wait_while(&mut count, condition);
 				true
 			}
-		}
-	}
-
-	fn wait_timeout(&self, timeout: Duration) -> bool {
-		let start = Instant::now();
-		let mut count = self.count.lock();
-
-		while *count > 0 {
-			let remaining = match timeout.checked_sub(start.elapsed()) {
-				Some(remaining) => remaining,
-				None => break,
-			};
-			if self.condvar.wait_for(&mut count, remaining).timed_out() {
-				return false;
-			}
-		}
-		true
-	}
-
-	fn wait_forever(&self) {
-		let mut count = self.count.lock();
-		while *count > 0 {
-			self.condvar.wait(&mut count);
 		}
 	}
 }
